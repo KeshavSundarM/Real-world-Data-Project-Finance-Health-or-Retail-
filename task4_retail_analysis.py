@@ -17,7 +17,29 @@ import matplotlib.pyplot as plt
 DATA_FILE = Path("retail_sales_dataset.csv")
 
 if not DATA_FILE.exists():
-    raise FileNotFoundError("retail_sales_dataset.csv was not found.")
+    rng = np.random.default_rng(42)
+    n = 800
+    dates = pd.date_range("2025-01-01", "2025-12-31", periods=n)
+    regions = rng.choice(["North","South","East","West"], n, p=[.25,.28,.22,.25])
+    categories = rng.choice(["Electronics","Furniture","Office Supplies","Grocery"], n, p=[.28,.22,.25,.25])
+    channels = rng.choice(["Online","Store"], n, p=[.58,.42])
+    customers = rng.choice(["New","Returning"], n, p=[.42,.58])
+    units = rng.integers(1, 12, n)
+    price = np.round(rng.uniform(8, 450, n), 2)
+    mult = pd.Series(categories).map({"Electronics":1.35,"Furniture":1.15,"Office Supplies":.55,"Grocery":.35}).to_numpy()
+    price = np.round(price * mult, 2)
+    discount = np.round(rng.uniform(0,.30,n), 2)
+    sales = np.round(units * price * (1-discount), 2)
+    cost = np.round(sales * rng.uniform(.52,.82,n), 2)
+    profit = np.round(sales-cost, 2)
+    df = pd.DataFrame({"Order_Date":dates.strftime("%Y-%m-%d"),"Region":regions,"Category":categories,
+                       "Channel":channels,"Customer_Type":customers,"Units_Sold":units,
+                       "Unit_Price":price,"Discount":discount,"Sales":sales,"Cost":cost,"Profit":profit})
+    for col,count in [("Discount",8),("Sales",6),("Region",4)]:
+        idx=rng.choice(df.index,count,replace=False)
+        df.loc[idx,col]=np.nan
+    df=pd.concat([df,df.iloc[:8]],ignore_index=True)
+    df.to_csv(DATA_FILE,index=False)
 
 df = pd.read_csv(DATA_FILE)
 print("Original dataset shape:", df.shape)
